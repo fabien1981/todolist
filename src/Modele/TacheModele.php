@@ -4,9 +4,6 @@ namespace App\Modele;
 require_once __DIR__ . '/../../vendor/autoload.php';
 use MongoDB\BSON\ObjectId;
 
-
-
-
 class TacheModele {
     private $collection;
 
@@ -28,10 +25,8 @@ class TacheModele {
             ['$set' => $tache]
         );
     }
-    
+
     public function supprimerTache($id) {
         $this->collection->deleteOne(['_id' => new ObjectId($id)]);
     }
-    
 }
-?>
