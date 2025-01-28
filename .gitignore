@@ -1,0 +1,4 @@
+/logs
+/vendor
+/node_modules
+.env
