@@ -9,59 +9,24 @@
 <body>
 <div class="container mt-5">
     <h1 class="text-center mb-4">Vos To-Do Lists</h1>
+    
+    <!-- Ajout des boutons de tri et filtrage -->
+    <div class="mb-3">
+        <label for="filtre-priorite" class="form-label">Filtrer par priorité :</label>
+        <select id="filtre-priorite" class="form-select">
+            <option value="toutes">Toutes</option>
+            <option value="basse">Basse</option>
+            <option value="moyenne">Moyenne</option>
+            <option value="haute">Haute</option>
+        </select>
+    </div>
+
     <div id="liste-container" class="list-group">
         <!-- Les listes seront chargées dynamiquement ici -->
     </div>
 </div>
-<script>
-    // Charger les listes existantes
-    function chargerListes() {
-        fetch("api.php", { method: "GET" })
-            .then((response) => response.json())
-            .then((listes) => {
-                const container = document.querySelector("#liste-container");
-                container.innerHTML = ""; // Réinitialiser la liste
-                listes.forEach((liste) => {
-                    const item = document.createElement("a");
-                    item.href = "#";
-                    item.className = "list-group-item list-group-item-action";
-                    item.innerHTML = `
-                        <strong>${liste.titre}</strong>
-                        <p>${liste.description}</p>
-                        <button class="btn btn-danger btn-sm supprimer-liste" data-id="${liste._id}">Supprimer</button>
-                    `;
-                    container.appendChild(item);
-                });
 
-                // Ajouter les événements pour supprimer
-                document.querySelectorAll(".supprimer-liste").forEach((btn) => {
-                    btn.addEventListener("click", function () {
-                        const id = this.dataset.id;
-                        supprimerListe(id);
-                    });
-                });
-            });
-    }
-
-    // Supprimer une liste
-    function supprimerListe(id) {
-        fetch("api.php", {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id }),
-        })
-            .then((response) => response.json())
-            .then((result) => {
-                if (result.success) {
-                    alert("Liste supprimée !");
-                    chargerListes();
-                } else {
-                    alert("Erreur lors de la suppression : " + result.message);
-                }
-            });
-    }
-
-    document.addEventListener("DOMContentLoaded", chargerListes);
-</script>
+<!-- Inclure le fichier JS -->
+<script src="js/listes.js"></script>
 </body>
 </html>

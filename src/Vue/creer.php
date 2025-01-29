@@ -18,28 +18,19 @@
             <label for="description" class="form-label">Description</label>
             <textarea id="description" name="description" class="form-control" rows="3" required></textarea>
         </div>
+        <div class="mb-3">
+            <label for="priorite" class="form-label">Priorité</label>
+            <select id="priorite" name="priorite" class="form-select">
+                <option value="basse">Basse</option>
+                <option value="moyenne" selected>Moyenne</option>
+                <option value="haute">Haute</option>
+            </select>
+        </div>
         <button type="submit" class="btn btn-success">Créer</button>
     </form>
 </div>
-<script>
-    document.querySelector("#formulaire-todolist").addEventListener("submit", function (e) {
-        e.preventDefault();
-        const formData = new FormData(this);
-        fetch("api.php", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(Object.fromEntries(formData))
-        })
-            .then((response) => response.json())
-            .then((result) => {
-                if (result.success) {
-                    alert("Nouvelle liste créée !");
-                    window.location.href = "listes.php";
-                } else {
-                    alert("Erreur lors de la création : " + result.message);
-                }
-            });
-    });
-</script>
+
+<!-- Inclure le fichier JS -->
+<script src="js/creer.js"></script>
 </body>
 </html>
