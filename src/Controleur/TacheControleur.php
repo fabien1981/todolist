@@ -20,6 +20,7 @@ class TacheControleur {
                 'titre' => $_POST['titre'],
                 'description' => $_POST['description'],
                 'statut' => $_POST['statut'],
+                'priorite' => $_POST['priorite'] ?? 'moyenne',
             ];
             try {
                 $this->modele->ajouterTache($tache);
@@ -29,6 +30,8 @@ class TacheControleur {
             }
         }
     }
+
+
 
     // Récupère et affiche la liste des tâches
     public function afficherTaches() {
@@ -78,4 +81,7 @@ class TacheControleur {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
     }
+
+   
+    
 }

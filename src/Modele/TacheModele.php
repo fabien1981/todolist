@@ -3,6 +3,7 @@ namespace App\Modele;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 use MongoDB\BSON\ObjectId;
+use MongoDB\BSON\UTCDateTime;
 
 class TacheModele {
     private $collection;
@@ -11,9 +12,6 @@ class TacheModele {
         $this->collection = $db->taches; // Nom de la collection
     }
 
-    public function ajouterTache($tache) {
-        $this->collection->insertOne($tache);
-    }
 
     public function obtenirTaches() {
         return $this->collection->find()->toArray();
@@ -29,4 +27,15 @@ class TacheModele {
     public function supprimerTache($id) {
         $this->collection->deleteOne(['_id' => new ObjectId($id)]);
     }
+
+    public function ajouterTache($tache) {
+        $this->collection->insertOne([
+            'titre' => $tache['titre'],
+            'description' => $tache['description'],
+            'statut' => $tache['statut'],
+            'priorite' => $tache['priorite'] ?? 'moyenne', // Priorité par défaut : moyenne
+            'date_creation' => new \MongoDB\BSON\UTCDateTime(),
+        ]);
+    }
+    
 }
