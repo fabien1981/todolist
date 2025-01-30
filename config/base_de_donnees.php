@@ -1,11 +1,17 @@
 <?php
-// config/base_de_donnees.php
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use MongoDB\Client;
+use Dotenv\Dotenv;
+
+$dotenv = Dotenv::createImmutable(__DIR__ . '/../');
+$dotenv->load();
 
 function obtenirBaseDeDonnees() {
-    $client = new Client("mongodb://localhost:27017");
-    return $client->todolist; // Nom de la base de données
+    $uri = $_ENV['MONGO_URI'];
+    $dbName = $_ENV['MONGO_DB'];
+
+    $client = new Client($uri);
+    return $client->$dbName; // Connexion à la base spécifiée
 }
 ?>
