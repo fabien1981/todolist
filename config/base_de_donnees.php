@@ -13,5 +13,8 @@ function obtenirBaseDeDonnees() {
 
     $client = new Client($uri);
     return $client->$dbName; // Connexion à la base spécifiée
+    var_dump($_ENV['MONGO_URI'], $_ENV['MONGO_DB']);
+die("🟢 Vérification des variables d'environnement");
+
 }
 ?>

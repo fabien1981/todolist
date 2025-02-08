@@ -1,9 +1,18 @@
 <?php
+
 namespace App\Controleur;
 
+require_once realpath(__DIR__ . '/../../config/base_de_donnees.php');
+require_once realpath(__DIR__ . '/../../src/Modele/TacheModele.php');
+
 use App\Modele\TacheModele;
+use MongoDB\BSON\ObjectId;
+use MongoDB\BSON\UTCDateTime;
+
+
 
 class TacheControleur {
+    
     private $modele;
 
     public function __construct() {
@@ -11,77 +20,138 @@ class TacheControleur {
         $this->modele = new TacheModele($db);
     }
 
-    // Gère les requêtes POST (ajout de tâches)
+    // ✅ Gère les requêtes POST / PUT envoyées en JSON
     public function gererRequete() {
-        $action = $_POST['action'] ?? '';
+        $donnees = json_decode(file_get_contents("php://input"), true);
 
-        if ($action === 'ajouter') {
-            $tache = [
-                'titre' => $_POST['titre'],
-                'description' => $_POST['description'],
-                'statut' => $_POST['statut'],
-                'priorite' => $_POST['priorite'] ?? 'moyenne',
-            ];
-            try {
-                $this->modele->ajouterTache($tache);
-                echo json_encode(['success' => true]);
-            } catch (\Exception $e) {
-                echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        if (!isset($donnees['action'])) {
+            echo json_encode(['success' => false, 'message' => '❌ Action non spécifiée']);
+            return;
+        }
+
+        try {
+            switch ($donnees['action']) {
+                case 'ajouter':
+                    echo json_encode($this->ajouterTache($donnees));
+                    break;
+                case 'supprimer':
+                    echo json_encode($this->supprimerTache($donnees['id'] ?? null));
+                    break;
+                case 'mettreAJour':
+                    echo json_encode($this->mettreAJourTache($donnees['id'] ?? null, $donnees));
+                    break;
+                default:
+                    echo json_encode(['success' => false, 'message' => '❌ Action inconnue']);
+                    break;
             }
-        }
-    }
-
-
-
-    // Récupère et affiche la liste des tâches
-    public function afficherTaches() {
-        try {
-            $taches = $this->modele->obtenirTaches();
-            echo json_encode($taches);
         } catch (\Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            echo json_encode(['success' => false, 'message' => '❌ Erreur : ' . $e->getMessage()]);
         }
     }
 
-    // Supprime une tâche
-    public function supprimerTache($data) {
-        if (!isset($data['id'])) {
-            echo json_encode(['success' => false, 'message' => 'ID manquant']);
-            return;
-        }
+    // ✅ Obtenir toutes les tâches
+    public function obtenirTaches() {
+        return $this->modele->obtenirTaches();
+    }
+    
 
-        $id = $data['id'];
-
+    public function mettreAJourStatut($id, $statut) {
         try {
-            $this->modele->supprimerTache($id);
-            echo json_encode(['success' => true]);
+            $this->modele->mettreAJourTache(new ObjectId($id), ['statut' => $statut]);
+            return ['success' => true, 'message' => '✅ Statut mis à jour'];
         } catch (\Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            return ['success' => false, 'message' => "❌ Erreur : " . $e->getMessage()];
         }
     }
+    
 
-    // Met à jour une tâche
-    public function mettreAJourTache($data) {
-        if (!isset($data['id']) || !isset($data['titre']) || !isset($data['description']) || !isset($data['statut'])) {
-            echo json_encode(['success' => false, 'message' => 'Données incomplètes']);
-            return;
+    // ✅ Ajouter une nouvelle tâche
+    public function ajouterTache($donnees) {
+        if (empty($donnees['titre']) || empty($donnees['description']) || empty($donnees['priorite'])) {
+            return ['success' => false, 'message' => '❌ Données incomplètes'];
         }
-
-        $id = $data['id'];
-        $tache = [
-            'titre' => $data['titre'],
-            'description' => $data['description'],
-            'statut' => $data['statut'],
-        ];
 
         try {
-            $this->modele->mettreAJourTache($id, $tache);
-            echo json_encode(['success' => true]);
+            $tache = [
+                'titre' => trim($donnees['titre']),
+                'description' => trim($donnees['description']),
+                'priorite' => $donnees['priorite'],
+                'statut' => 'en attente',
+                'date_creation' => new UTCDateTime(),
+                'items' => [] // Initialisation vide des sous-tâches
+            ];
+
+            $this->modele->ajouterTache($tache);
+            return ['success' => true, 'message' => '✅ Tâche ajoutée avec succès'];
         } catch (\Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            return ['success' => false, 'message' => '❌ Erreur : ' . $e->getMessage()];
         }
     }
 
+    // ✅ Mettre à jour une tâche (y compris les sous-tâches)
+    public function mettreAJourTache($id, $donnees) {
    
+        if (!$id || empty($donnees['titre']) || empty($donnees['description'])) {
+            return ['success' => false, 'message' => '❌ Données incomplètes'];
+        }
+
+        try {
+            $miseAJour = [
+                'titre' => $donnees['titre'],
+                'description' => $donnees['description'],
+                'priorite' => $donnees['priorite'] ?? null,
+                'items' => $donnees['items'] ?? [] // Mise à jour des sous-tâches
+            ];
+
+            $this->modele->mettreAJourTache($id, $miseAJour);
+            return ['success' => true, 'message' => '✅ Tâche mise à jour avec succès'];
+        } catch (\Exception $e) {
+            return ['success' => false, 'message' => '❌ Erreur : ' . $e->getMessage()];
+        }
+    }
+
+    // ✅ Supprimer une tâche
+    public function supprimerTache($id) {
+        if (!$id) {
+            return ['success' => false, 'message' => '❌ ID manquant'];
+        }
+    
+        try {
+            $idMongo = new ObjectId($id); // ✅ Conversion en ObjectId
+    
+            $deleteResult = $this->modele->supprimerTache($idMongo); // ✅ Utilisation de l'ObjectId
+    
+            if ($deleteResult->getDeletedCount() > 0) {
+                return ['success' => true, 'message' => '✅ Tâche supprimée avec succès'];
+            } else {
+                return ['success' => false, 'message' => '❌ Aucune tâche trouvée avec cet ID'];
+            }
+        } catch (\Exception $e) {
+            return ['success' => false, 'message' => '❌ Erreur : ' . $e->getMessage()];
+        }
+    }
+    
+
+    // ✅ Obtenir une tâche et ses sous-tâches
+    public function obtenirTacheEtItems($id) {
+        if (!$id) {
+            return ['success' => false, 'message' => '❌ ID manquant'];
+        }
+    
+        try {
+            $idMongo = new ObjectId($id); // ✅ Conversion en ObjectId
+    
+            $tache = $this->modele->obtenirTacheParId($idMongo); // ✅ Utilisation de l'ObjectId
+    
+            if (!$tache) {
+                return ['success' => false, 'message' => '❌ Tâche introuvable'];
+            }
+    
+            $tache['_id'] = (string) $tache['_id']; // Convertir en string pour l'affichage
+            return ['success' => true, 'data' => $tache];
+        } catch (\Exception $e) {
+            return ['success' => false, 'message' => '❌ Erreur : ' . $e->getMessage()];
+        }
+    }
     
 }
